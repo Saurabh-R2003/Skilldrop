@@ -359,7 +359,7 @@ async function loadFavorites() {
     try {
         const favorites = await DBManager.getFavorites();
         const favoritesList = elements.favoritesList;
-        
+
         if (favorites.length === 0) {
             favoritesList.innerHTML = `
                 <div class="empty-state">
@@ -370,7 +370,7 @@ async function loadFavorites() {
             `;
             return;
         }
-        
+
         favoritesList.innerHTML = favorites.map(favorite => `
             <div class="favorite-item">
                 <h3>${favorite.title}</h3>
@@ -381,7 +381,7 @@ async function loadFavorites() {
                       '🔗 Learn More'}
                 </a>` : ''}
                 <div class="favorite-actions">
-                    <button class="action-btn" onclick="removeFavorite(${favorite.skillId})">
+                    <button class="action-btn" onclick="removeFavorite(${favorite.id})">
                         <span class="icon">🗑️</span>
                         <span class="text">Remove</span>
                     </button>
@@ -393,6 +393,7 @@ async function loadFavorites() {
         showToast('Failed to load favorites', 'error');
     }
 }
+
 
 // Remove favorite
 async function removeFavorite(skillId) {
