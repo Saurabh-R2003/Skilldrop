@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillDrops - Daily Micro-Skills</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SkillDrops">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">💡 SkillDrops</h1>
+            <nav class="nav">
+                <button class="nav-btn" id="homeBtn">Home</button>
+                <button class="nav-btn" id="favoritesBtn">Favorites</button>
+                <button class="nav-btn" id="contributeBtn">Contribute</button>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle">🌙</button>
+                <button class="install-btn" id="installBtn" style="display: none;">Install App</button>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Home View -->
+            <section class="view home-view active" id="homeView">
+                <div class="hero">
+                    <h2>Learn Something New Every Day</h2>
+                    <p>Discover bite-sized skills to level up your life</p>
+                    <button class="primary-btn drop-btn" id="dropSkillBtn">
+                        🎁 Drop Today's Skill
+                    </button>
+                </div>
+
+                <div class="skill-card" id="skillCard" style="display: none;">
+                    <div class="skill-content">
+                        <h3 class="skill-title" id="skillTitle"></h3>
+                        <p class="skill-summary" id="skillSummary"></p>
+                        <div class="skill-link" id="skillLink" style="display: none;">
+                            <a href="#" target="_blank" rel="noopener noreferrer" id="skillUrl">Learn More</a>
+                        </div>
+                    </div>
+                    <div class="skill-actions">
+                        <button class="action-btn favorite-btn" id="favoriteBtn">
+                            <span class="icon">⭐</span>
+                            <span class="text">Favorite</span>
+                        </button>
+                        <button class="action-btn thumbs-up" id="thumbsUpBtn">
+                            <span class="icon">👍</span>
+                        </button>
+                        <button class="action-btn thumbs-down" id="thumbsDownBtn">
+                            <span class="icon">👎</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats" id="stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="streakCount">0</span>
+                        <span class="stat-label">Day Streak</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="totalSkills">0</span>
+                        <span class="stat-label">Skills Learned</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="favoritesCount">0</span>
+                        <span class="stat-label">Favorites</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Favorites View -->
+            <section class="view favorites-view" id="favoritesView">
+                <h2>Your Favorite Skills</h2>
+                <div class="favorites-list" id="favoritesList">
+                    <div class="empty-state">
+                        <span class="empty-icon">⭐</span>
+                        <h3>No favorites yet</h3>
+                        <p>Start favoriting skills to see them here!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contribute View -->
+            <section class="view contribute-view" id="contributeView">
+                <h2>Share Your Knowledge</h2>
+                <form class="contribute-form" id="contributeForm">
+                    <div class="form-group">
+                        <label for="skillTitleInput">Skill Title</label>
+                        <input type="text" id="skillTitleInput" placeholder="e.g., 5-Minute Meditation Technique" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="skillDescriptionInput">Short Description</label>
+                        <textarea id="skillDescriptionInput" placeholder="Brief 1-2 sentence summary of the skill..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="skillUrlInput">Optional Link (YouTube or Article)</label>
+                        <input type="url" id="skillUrlInput" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+                    <div class="form-group">
+                        <label for="skillCategoryInput">Category</label>
+                        <select id="skillCategoryInput">
+                            <option value="productivity">Productivity</option>
+                            <option value="life-hack">Life Hack</option>
+                            <option value="soft-skill">Soft Skill</option>
+                            <option value="health">Health & Wellness</option>
+                            <option value="technology">Technology</option>
+                            <option value="creativity">Creativity</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="primary-btn">Add Skill</button>
+                </form>
+            </section>
+        </main>
+
+        <div class="notification-permission" id="notificationPermission" style="display: none;">
+            <div class="notification-content">
+                <h3>Stay motivated with daily reminders!</h3>
+                <p>Allow notifications to get your daily skill drops</p>
+                <div class="notification-actions">
+                    <button class="primary-btn" id="allowNotifications">Allow</button>
+                    <button class="secondary-btn" id="denyNotifications">Maybe Later</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="db.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
