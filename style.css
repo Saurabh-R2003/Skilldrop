@@ -169,6 +169,17 @@ body {
     overflow: hidden;
 }
 
+/* Core button styles with hover animation */
+.theme-toggle,
+.install-btn,
+.add-to-home-btn {
+    position: relative; /* Ensure ::before is positioned relative to button */
+    z-index: 1;         /* Place content above ::before */
+    overflow: hidden;   /* Prevent ::before from overflowing */
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Animated glowing background on hover */
 .theme-toggle::before,
 .install-btn::before,
 .add-to-home-btn::before {
@@ -182,24 +193,26 @@ body {
     opacity: 0;
     transition: all 0.3s ease;
     border-radius: 12px;
+    z-index: 0; /* Place glow underneath the button content */
 }
 
+/* Lift and glow effect on hover */
 .theme-toggle:hover,
-.install-btn:hover {
+.install-btn:hover,
+.add-to-home-btn:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
-}
-
-.theme-toggle:hover::before,
-.install-btn:hover::before {
-    opacity: 1;
-}
-
-.theme-toggle:hover,
-.install-btn:hover {
     color: white;
     border-color: transparent;
 }
+
+/* Reveal background glow on hover */
+.theme-toggle:hover::before,
+.install-btn:hover::before,
+.add-to-home-btn:hover::before {
+    opacity: 1;
+}
+
 
 .add-to-home-btn {
     background: var(--gradient-success);
