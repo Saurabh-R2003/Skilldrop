@@ -172,7 +172,7 @@ function setupEventListeners() {
     elements.installBtn.addEventListener('click', installApp);
     
     // Add to home button
-    elements.addToHomeBtn.addEventListener('click', showAddToHomeInstructions);
+    elements.addToHomeBtn.addEventListener('click', installApp);
     
     // Drop skill button
     elements.dropSkillBtn.addEventListener('click', dropRandomSkill);
@@ -486,12 +486,38 @@ function checkInstallPrompt() {
         e.preventDefault();
         deferredPrompt = e;
         elements.installBtn.style.display = 'block';
+        elements.addToHomeBtn.style.display = 'none'; // Hide manual button when native prompt is available
     });
+    
+    // Check if app is already installed
+    window.addEventListener('appinstalled', (e) => {
+        elements.installBtn.style.display = 'none';
+        elements.addToHomeBtn.style.display = 'none';
+        showToast('App installed successfully! 🎉', 'success');
+    });
+    
+    // Show appropriate button based on installation status
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        elements.installBtn.style.display = 'none';
+        elements.addToHomeBtn.style.display = 'none';
+    }
 }
 
 async function installApp() {
     if (!deferredPrompt) {
-        showAddToHomeInstructions();
+        // Check if app is already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            showToast('App is already installed!', 'success');
+            return;
+        }
+        
+        // Try to trigger the native browser install prompt
+        if ('BeforeInstallPromptEvent' in window) {
+            showToast('Installation prompt should appear in your browser', 'success');
+        } else {
+            // Fallback for browsers that don't support the API
+            showToast('To install: Use your browser menu > "Add to Home Screen" or "Install App"', 'error');
+        }
         return;
     }
     
@@ -500,29 +526,15 @@ async function installApp() {
     
     if (outcome === 'accepted') {
         showToast('App installed successfully! 🎉', 'success');
+    } else {
+        showToast('Installation cancelled', 'error');
     }
     
     deferredPrompt = null;
     elements.installBtn.style.display = 'none';
 }
 
-function showAddToHomeInstructions() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isAndroid = /Android/.test(navigator.userAgent);
-    
-    let instructions = '';
-    
-    if (isIOS) {
-        instructions = 'To add to Home Screen on iOS:\n1. Tap the Share button (📤) in Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm';
-    } else if (isAndroid) {
-        instructions = 'To add to Home Screen on Android:\n1. Tap the menu (⋮) in your browser\n2. Tap "Add to Home screen" or "Install app"\n3. Tap "Add" to confirm';
-    } else {
-        instructions = 'To add to Home Screen:\n1. Click the menu button in your browser\n2. Look for "Install app" or "Add to Home screen"\n3. Follow the prompts to install';
-    }
-    
-    alert(instructions);
-}
+
 
 // Notifications
 function showNotificationPermissionDialog() {
@@ -608,7 +620,7 @@ async function setupPushSubscription(registration) {
         // This is a demo - in production you'd need a real push server
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: null // You'd need a real VAPID key here
+            //applicationServerKey: null // You'd need a real VAPID key here
         });
         
         console.log('Push subscription successful:', subscription);
