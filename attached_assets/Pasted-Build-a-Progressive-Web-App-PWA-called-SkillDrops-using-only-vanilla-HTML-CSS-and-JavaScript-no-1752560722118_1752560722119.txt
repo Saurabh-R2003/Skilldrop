@@ -1,0 +1,124 @@
+Build a Progressive Web App (PWA) called SkillDrops using only vanilla HTML, CSS, and JavaScript (no React, no TypeScript).
+
+🎯 Purpose:
+Present a new micro-skill lesson (text or video) each day. Users can:
+
+Get a random skill drop
+
+Mark it as a favorite
+
+Submit new skills locally
+
+Use it fully offline
+
+Install it to their home screen
+
+Receive daily notifications
+
+🔥 Features to Include:
+🎁 “Drop Today’s Skill” Button:
+Clicking the button shows a random skill
+
+Each skill includes:
+
+Title
+
+1–2 sentence summary
+
+Optional YouTube video or link
+
+Store a few predefined lessons inside IndexedDB (on first load)
+
+⭐ Favorite & Rate:
+Users can click a “⭐ Favorite” or 👍/👎 rating on the skill
+
+Store favorites and ratings in IndexedDB
+
+Add a page/view to list all favorite skills
+
+📝 Contribute Your Own Skill:
+Simple form:
+
+Skill Title
+
+Short description
+
+Optional URL (YouTube or article)
+
+Add these to local IndexedDB
+
+New submissions are available in future drops
+
+🔔 Web Notifications:
+Use the Notifications API to push:
+
+“Your skill drop is ready 💡”
+
+Trigger once every 24 hrs (or with a timer for demo)
+
+📦 Offline Support:
+Use IndexedDB for storing:
+
+All skills
+
+Favorites
+
+Contributions
+
+Use a Service Worker to cache:
+
+All HTML, CSS, JS, icons, thumbnails
+
+First load should make app fully available offline
+
+📲 Add to Home Screen (A2HS):
+Include manifest.json with:
+
+name, short_name, start_url, display, and icons
+
+Handle beforeinstallprompt and show a custom “Install App” button
+
+🎛️ UI:
+Clean card-style layout
+
+“Drop New Skill” button on top
+
+Skill appears with a nice reveal animation
+
+Option to view list of favorites
+
+Mobile-first responsive layout
+
+🛠 Tech Stack (Required):
+HTML + CSS + Vanilla JS only
+
+IndexedDB for all storage
+
+Service Worker for offline PWA
+
+Web Notifications API
+
+Optional: JS module separation (db.js, script.js, etc.)
+
+📁 File Structure:
+index.html
+
+style.css
+
+script.js (main logic)
+
+db.js (IndexedDB logic)
+
+service-worker.js
+
+manifest.json
+
+✅ Optional Bonus Features:
+
+Dark mode toggle
+
+Categories (e.g., Productivity, Life Hack, Soft Skill)
+
+Shuffle mode
+
+Streak tracker (e.g., “3 days of learning in a row!”)
