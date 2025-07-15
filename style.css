@@ -95,7 +95,8 @@ body {
 }
 
 .theme-toggle,
-.install-btn {
+.install-btn,
+.add-to-home-btn {
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-primary);
@@ -107,10 +108,22 @@ body {
 }
 
 .theme-toggle:hover,
-.install-btn:hover {
+.install-btn:hover,
+.add-to-home-btn:hover {
     background-color: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+}
+
+.add-to-home-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.add-to-home-btn:hover {
+    background-color: #0d9488;
+    border-color: #0d9488;
 }
 
 .main {
@@ -336,6 +349,23 @@ body {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+}
+
+.skill-link-btn {
+    display: inline-block;
+    margin: 10px 0;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white !important;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.skill-link-btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
 }
 
 .empty-state {

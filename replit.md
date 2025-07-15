@@ -8,6 +8,16 @@ SkillDrops is a Progressive Web App (PWA) built with vanilla HTML, CSS, and Java
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### July 15, 2025 - PWA Enhancement
+- Added "Add to Home Screen" button with platform-specific instructions
+- Enhanced YouTube/article link recognition with appropriate icons
+- Improved push notification setup with actions and proper tags
+- Added URL shortcut handling for manifest shortcuts
+- Enhanced favorites display with better link formatting
+- Added push subscription setup for future server integration
+
 ## System Architecture
 
 ### Frontend Architecture

@@ -56,6 +56,18 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "Contribute Skill",
+      "short_name": "Contribute",
+      "description": "Add a new skill to the collection",
+      "url": "/?action=contribute",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "prefer_related_applications": false,

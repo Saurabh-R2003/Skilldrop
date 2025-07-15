@@ -11,6 +11,7 @@ const elements = {
     contributeBtn: document.getElementById('contributeBtn'),
     themeToggle: document.getElementById('themeToggle'),
     installBtn: document.getElementById('installBtn'),
+    addToHomeBtn: document.getElementById('addToHomeBtn'),
     
     // Views
     homeView: document.getElementById('homeView'),
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupServiceWorker();
     checkInstallPrompt();
     updateStats();
+    handleURLShortcuts();
 });
 
 // Initialize application
@@ -169,6 +171,9 @@ function setupEventListeners() {
     // Install button
     elements.installBtn.addEventListener('click', installApp);
     
+    // Add to home button
+    elements.addToHomeBtn.addEventListener('click', showAddToHomeInstructions);
+    
     // Drop skill button
     elements.dropSkillBtn.addEventListener('click', dropRandomSkill);
     
@@ -232,7 +237,16 @@ function displaySkill(skill) {
     // Handle URL
     if (skill.url) {
         elements.skillUrl.href = skill.url;
-        elements.skillUrl.textContent = skill.url.includes('youtube.com') ? 'Watch Video' : 'Learn More';
+        
+        // Better link text based on URL type
+        if (skill.url.includes('youtube.com') || skill.url.includes('youtu.be')) {
+            elements.skillUrl.textContent = '🎥 Watch Video';
+        } else if (skill.url.includes('article') || skill.url.includes('blog') || skill.url.includes('medium.com')) {
+            elements.skillUrl.textContent = '📖 Read Article';
+        } else {
+            elements.skillUrl.textContent = '🔗 Learn More';
+        }
+        
         elements.skillLink.style.display = 'block';
     } else {
         elements.skillLink.style.display = 'none';
@@ -361,7 +375,11 @@ async function loadFavorites() {
             <div class="favorite-item">
                 <h3>${favorite.title}</h3>
                 <p>${favorite.summary}</p>
-                ${favorite.url ? `<a href="${favorite.url}" target="_blank" rel="noopener noreferrer">Learn More</a>` : ''}
+                ${favorite.url ? `<a href="${favorite.url}" target="_blank" rel="noopener noreferrer" class="skill-link-btn">
+                    ${favorite.url.includes('youtube.com') || favorite.url.includes('youtu.be') ? '🎥 Watch Video' : 
+                      favorite.url.includes('article') || favorite.url.includes('blog') ? '📖 Read Article' : 
+                      '🔗 Learn More'}
+                </a>` : ''}
                 <div class="favorite-actions">
                     <button class="action-btn" onclick="removeFavorite(${favorite.skillId})">
                         <span class="icon">🗑️</span>
@@ -472,7 +490,10 @@ function checkInstallPrompt() {
 }
 
 async function installApp() {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+        showAddToHomeInstructions();
+        return;
+    }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -483,6 +504,24 @@ async function installApp() {
     
     deferredPrompt = null;
     elements.installBtn.style.display = 'none';
+}
+
+function showAddToHomeInstructions() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    let instructions = '';
+    
+    if (isIOS) {
+        instructions = 'To add to Home Screen on iOS:\n1. Tap the Share button (📤) in Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm';
+    } else if (isAndroid) {
+        instructions = 'To add to Home Screen on Android:\n1. Tap the menu (⋮) in your browser\n2. Tap "Add to Home screen" or "Install app"\n3. Tap "Add" to confirm';
+    } else {
+        instructions = 'To add to Home Screen:\n1. Click the menu button in your browser\n2. Look for "Install app" or "Add to Home screen"\n3. Follow the prompts to install';
+    }
+    
+    alert(instructions);
 }
 
 // Notifications
@@ -515,6 +554,14 @@ async function requestNotificationPermission() {
 function setupDailyNotifications() {
     if (Notification.permission !== 'granted') return;
     
+    // Register push notification service worker
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(registration => {
+            // Setup push subscription if supported
+            setupPushSubscription(registration);
+        });
+    }
+    
     // Schedule daily notification (for demo, we'll use a shorter interval)
     setInterval(() => {
         const lastNotification = localStorage.getItem('lastNotification');
@@ -524,7 +571,19 @@ function setupDailyNotifications() {
             new Notification('Your skill drop is ready! 💡', {
                 body: 'Learn something new today with SkillDrops',
                 icon: '/icons/icon-192.png',
-                badge: '/icons/icon-192.png'
+                badge: '/icons/icon-192.png',
+                tag: 'daily-skill',
+                renotify: true,
+                actions: [
+                    {
+                        action: 'view',
+                        title: 'View Skill'
+                    },
+                    {
+                        action: 'dismiss',
+                        title: 'Dismiss'
+                    }
+                ]
             });
             
             localStorage.setItem('lastNotification', today);
@@ -534,13 +593,28 @@ function setupDailyNotifications() {
     // For demo purposes, also set a shorter interval
     setTimeout(() => {
         if (Notification.permission === 'granted') {
-            new Notification('Your skill drop is ready! 💡', {
-                body: 'Learn something new today with SkillDrops',
+            new Notification('Welcome to SkillDrops! 💡', {
+                body: 'Your daily micro-skill learning companion is ready',
                 icon: '/icons/icon-192.png',
-                badge: '/icons/icon-192.png'
+                badge: '/icons/icon-192.png',
+                tag: 'welcome'
             });
         }
-    }, 30000); // 30 seconds for demo
+    }, 5000); // 5 seconds for demo
+}
+
+async function setupPushSubscription(registration) {
+    try {
+        // This is a demo - in production you'd need a real push server
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: null // You'd need a real VAPID key here
+        });
+        
+        console.log('Push subscription successful:', subscription);
+    } catch (error) {
+        console.log('Push subscription failed:', error);
+    }
 }
 
 // Toast notifications
@@ -553,6 +627,27 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// Handle URL shortcuts from manifest
+function handleURLShortcuts() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    
+    switch(action) {
+        case 'drop':
+            dropRandomSkill();
+            break;
+        case 'favorites':
+            showView('favorites');
+            break;
+        case 'contribute':
+            showView('contribute');
+            break;
+        default:
+            // Default behavior - show home
+            showView('home');
+    }
 }
 
 // Make functions globally available
