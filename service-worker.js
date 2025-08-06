@@ -6,8 +6,8 @@ const urlsToCache = [
     '/script.js',
     '/db.js',
     '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/favicon-16x16.png',
+    '/icons/favicon-32x32.png'
 ];
 
 // Install event - cache resources

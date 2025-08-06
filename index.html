@@ -1,42 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>SkillDrops - Daily Micro-Skills</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="SkillDrops">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SkillDrops" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="logo">💡 SkillDrops</h1>
-            <nav class="nav">
-                <button class="nav-btn" id="homeBtn">Home</button>
+    <header class="header">
+  <div class="header-left">
+    <h1 class="brand"><span class="emoji">💡</span> SkillDrops</h1>
+  </div>
+
+  <div class="header-center">
+   <nav class="nav">
+                <button class="nav-btn active" id="homeBtn">Home</button>
                 <button class="nav-btn" id="favoritesBtn">Favorites</button>
                 <button class="nav-btn" id="contributeBtn">Contribute</button>
             </nav>
-            <div class="header-actions">
+  </div>
+
+  <div class="header-right">
+   <div id="user-profile" style="display: none;">
+                    <span id="userDisplayName"></span>
+                    <button id="logoutBtn" class="secondary-btn">Logout</button>
+                </div>
+                <button id="loginBtn" class="primary-btn">Login with Google</button>
                 <button class="theme-toggle" id="themeToggle">🌙</button>
                 <button class="install-btn" id="installBtn" style="display: none;">📱 Install App</button>
                 <button class="add-to-home-btn" id="addToHomeBtn">🏠 Add to Home</button>
-            </div>
-        </header>
-
+  </div>
+</header>
+    <div class="container">
+    
+        <!-- Main Content -->
         <main class="main">
             <!-- Home View -->
             <section class="view home-view active" id="homeView">
                 <div class="hero">
                     <h2>Learn Something New Every Day</h2>
                     <p>Discover bite-sized skills to level up your life</p>
-                    <button class="primary-btn drop-btn" id="dropSkillBtn">
-                        🎁 Drop Today's Skill
-                    </button>
+                    <button class="primary-btn drop-btn" id="dropSkillBtn">🎁 Drop Today's Skill</button>
                 </div>
 
                 <div class="skill-card" id="skillCard" style="display: none;">
@@ -49,8 +60,7 @@
                     </div>
                     <div class="skill-actions">
                         <button class="action-btn favorite-btn" id="favoriteBtn">
-                            <span class="icon">⭐</span>
-                            <span class="text">Favorite</span>
+                            <span class="icon">⭐</span><span class="text">Favorite</span>
                         </button>
                         <button class="action-btn thumbs-up" id="thumbsUpBtn">
                             <span class="icon">👍</span>
@@ -68,7 +78,7 @@
                     </div>
                     <div class="stat-item">
                         <span class="stat-number" id="totalSkills">0</span>
-                        <span class="stat-label">Skills Learned</span>
+                        <span class="stat-label">Skills Available</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-number" id="favoritesCount">0</span>
@@ -95,7 +105,7 @@
                 <form class="contribute-form" id="contributeForm">
                     <div class="form-group">
                         <label for="skillTitleInput">Skill Title</label>
-                        <input type="text" id="skillTitleInput" placeholder="e.g., 5-Minute Meditation Technique" required>
+                        <input type="text" id="skillTitleInput" placeholder="e.g., 5-Minute Meditation Technique" required />
                     </div>
                     <div class="form-group">
                         <label for="skillDescriptionInput">Short Description</label>
@@ -103,7 +113,7 @@
                     </div>
                     <div class="form-group">
                         <label for="skillUrlInput">Optional Link (YouTube or Article)</label>
-                        <input type="url" id="skillUrlInput" placeholder="https://youtube.com/watch?v=...">
+                        <input type="url" id="skillUrlInput" placeholder="https://www.youtube.com/watch?v=..." />
                     </div>
                     <div class="form-group">
                         <label for="skillCategoryInput">Category</label>
@@ -121,6 +131,7 @@
             </section>
         </main>
 
+        <!-- Notification Prompt -->
         <div class="notification-permission" id="notificationPermission" style="display: none;">
             <div class="notification-content">
                 <h3>Stay motivated with daily reminders!</h3>
@@ -133,8 +144,15 @@
         </div>
     </div>
 
+    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- Load db.js first so DBManager is ready before script.js -->
     <script src="db.js"></script>
     <script src="script.js"></script>
 </body>

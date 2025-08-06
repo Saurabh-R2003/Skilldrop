@@ -1,304 +1,180 @@
-// IndexedDB Database Manager
+// --- Firestore Database Manager ---
 const DBManager = {
     db: null,
-    dbName: 'SkillDropsDB',
-    version: 1,
-    
-    // Initialize database
+    user: null,
+
+    /**
+     * Initializes the DB Manager and sets up the authentication listener.
+     * Should be called after Firebase is fully loaded.
+     */
     async init() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.version);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                this.db = request.result;
-                resolve();
-            };
-            
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                // Skills store
-                if (!db.objectStoreNames.contains('skills')) {
-                    const skillsStore = db.createObjectStore('skills', { keyPath: 'id', autoIncrement: true });
-                    skillsStore.createIndex('category', 'category', { unique: false });
-                    skillsStore.createIndex('title', 'title', { unique: false });
-                }
-                
-                // Favorites store
-                if (!db.objectStoreNames.contains('favorites')) {
-                    const favoritesStore = db.createObjectStore('favorites', { keyPath: 'id', autoIncrement: true });
-                    favoritesStore.createIndex('skillId', 'skillId', { unique: true });
-                }
-                
-                // Ratings store
-                if (!db.objectStoreNames.contains('ratings')) {
-                    const ratingsStore = db.createObjectStore('ratings', { keyPath: 'id', autoIncrement: true });
-                    ratingsStore.createIndex('skillId', 'skillId', { unique: true });
-                }
-                
-                // User stats store
-                if (!db.objectStoreNames.contains('stats')) {
-                    const statsStore = db.createObjectStore('stats', { keyPath: 'key' });
-                }
-            };
+        if (typeof firebase === 'undefined') {
+            console.error('Firebase is not initialized. Make sure Firebase SDK is loaded before db.js');
+            return;
+        }
+
+        this.db = firebase.firestore();
+
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                this.user = user;
+                document.dispatchEvent(new CustomEvent('user-loggedin', { detail: { user } }));
+                await this.migrateToFirestore();
+            } else {
+                this.user = null;
+                document.dispatchEvent(new Event('user-loggedout'));
+            }
         });
     },
-    
-    // Skills operations
+
+    /**
+     * One-time migration from IndexedDB to Firestore for authenticated users.
+     */
+    async migrateToFirestore() {
+        if (!this.user) return;
+
+        const migrationKey = `migration_completed_${this.user.uid}`;
+        if (localStorage.getItem(migrationKey)) return;
+
+        console.log('Starting data migration from IndexedDB to Firestore...');
+        try {
+            const localDB = await this.openLocalDB();
+            if (!localDB) return;
+
+            const favorites = await this.getLocalStoreData(localDB, 'favorites');
+            if (favorites.length > 0) {
+                const favoritesRef = this.db.collection('users').doc(this.user.uid).collection('favorites');
+                for (const fav of favorites) {
+                    await favoritesRef.doc(fav.skillId.toString()).set({
+                        title: fav.title,
+                        summary: fav.summary,
+                        url: fav.url,
+                        createdAt: fav.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            }
+
+            localStorage.setItem(migrationKey, 'true');
+            console.log('Migration successful!');
+        } catch (error) {
+            console.error('Migration failed:', error);
+        }
+    },
+
+    // --- Skill Operations ---
     async addSkill(skillData) {
         const skill = {
             ...skillData,
-            createdAt: new Date().toISOString(),
-            userContributed: true
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            contributedBy: this.user ? this.user.uid : null
         };
-        
-        return this.performTransaction('skills', 'readwrite', (store) => {
-            return store.add(skill);
-        });
+        return await this.db.collection('skills').add(skill);
     },
-    
+
     async getSkill(id) {
-        return this.performTransaction('skills', 'readonly', (store) => {
-            return store.get(id);
-        });
+        const doc = await this.db.collection('skills').doc(id).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
     },
-    
+
     async getAllSkills() {
-        return this.performTransaction('skills', 'readonly', (store) => {
-            return store.getAll();
-        });
+        const snapshot = await this.db.collection('skills').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
-    
+
     async getRandomSkill() {
         const skills = await this.getAllSkills();
         if (skills.length === 0) return null;
-        
-        const randomIndex = Math.floor(Math.random() * skills.length);
-        return skills[randomIndex];
+        return skills[Math.floor(Math.random() * skills.length)];
     },
-    
-    async getSkillsCount() {
-        return this.performTransaction('skills', 'readonly', (store) => {
-            return store.count();
-        });
+
+    // --- Favorites ---
+    async addFavorite(skill) {
+        if (!this.user) throw new Error("User not logged in");
+        return await this.db.collection('users').doc(this.user.uid)
+            .collection('favorites').doc(skill.id).set({
+                title: skill.title,
+                summary: skill.summary,
+                url: skill.url || null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
     },
-    
-    async getSkillsByCategory(category) {
-        return this.performTransaction('skills', 'readonly', (store) => {
-            const index = store.index('category');
-            return index.getAll(category);
-        });
-    },
-    
-    // Favorites operations
-    async addFavorite(skillId) {
-        const skill = await this.getSkill(skillId);
-        if (!skill) throw new Error('Skill not found');
-        
-        const favorite = {
-            skillId: skillId,
-            title: skill.title,
-            summary: skill.summary,
-            url: skill.url,
-            createdAt: new Date().toISOString()
-        };
-        
-        return this.performTransaction('favorites', 'readwrite', (store) => {
-            return store.add(favorite);
-        });
-    },
-    
+
     async removeFavorite(skillId) {
-        return this.performTransaction('favorites', 'readwrite', (store) => {
-            const index = store.index('skillId');
-            return index.getKey(skillId).then(key => {
-                if (key) return store.delete(key);
-            });
-        });
+        if (!this.user) throw new Error("User not logged in");
+        return await this.db.collection('users').doc(this.user.uid)
+            .collection('favorites').doc(skillId).delete();
     },
-    
+
     async getFavorite(skillId) {
-        return this.performTransaction('favorites', 'readonly', (store) => {
-            const index = store.index('skillId');
-            return index.get(skillId);
-        });
+        if (!this.user) return null;
+        const doc = await this.db.collection('users').doc(this.user.uid)
+            .collection('favorites').doc(skillId).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
     },
-    
+
     async getFavorites() {
-        return this.performTransaction('favorites', 'readonly', (store) => {
-            return store.getAll();
-        });
+        if (!this.user) return [];
+        const snapshot = await this.db.collection('users').doc(this.user.uid)
+            .collection('favorites').orderBy('createdAt', 'desc').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
-    
-    // Ratings operations
+
+    // --- Ratings ---
     async addRating(skillId, rating) {
-        const existingRating = await this.getRating(skillId);
-        
-        if (existingRating) {
-            // Update existing rating
-            return this.performTransaction('ratings', 'readwrite', (store) => {
-                const index = store.index('skillId');
-                return index.get(skillId).then(ratingData => {
-                    if (ratingData) {
-                        ratingData.rating = rating;
-                        ratingData.updatedAt = new Date().toISOString();
-                        return store.put(ratingData);
-                    }
-                });
+        if (!this.user) throw new Error("User not logged in");
+        return await this.db.collection('users').doc(this.user.uid)
+            .collection('ratings').doc(skillId).set({
+                rating,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-        } else {
-            // Add new rating
-            const ratingData = {
-                skillId: skillId,
-                rating: rating,
-                createdAt: new Date().toISOString()
-            };
-            
-            return this.performTransaction('ratings', 'readwrite', (store) => {
-                return store.add(ratingData);
-            });
-        }
     },
-    
+
     async removeRating(skillId) {
-        return this.performTransaction('ratings', 'readwrite', (store) => {
-            const index = store.index('skillId');
-            return index.getKey(skillId).then(key => {
-                if (key) return store.delete(key);
-            });
-        });
+        if (!this.user) throw new Error("User not logged in");
+        return await this.db.collection('users').doc(this.user.uid)
+            .collection('ratings').doc(skillId).delete();
     },
-    
+
     async getRating(skillId) {
-        const ratingData = await this.performTransaction('ratings', 'readonly', (store) => {
-            const index = store.index('skillId');
-            return index.get(skillId);
-        });
-        
-        return ratingData ? ratingData.rating : null;
+        if (!this.user) return null;
+        const doc = await this.db.collection('users').doc(this.user.uid)
+            .collection('ratings').doc(skillId).get();
+        return doc.exists ? doc.data().rating : null;
     },
-    
-    // Stats operations
-    async getStats() {
-        const totalSkills = await this.getSkillsCount();
-        const favorites = await this.getFavorites();
-        const streak = this.calculateStreak();
-        
-        return {
-            totalSkills,
-            favoritesCount: favorites.length,
-            streak
-        };
-    },
-    
-    calculateStreak() {
-        const today = new Date().toDateString();
-        const lastSkillDate = localStorage.getItem('lastSkillDate');
-        
-        if (!lastSkillDate) return 0;
-        
-        const lastDate = new Date(lastSkillDate);
-        const currentDate = new Date(today);
-        const timeDiff = currentDate.getTime() - lastDate.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
-        if (daysDiff === 0) {
-            return parseInt(localStorage.getItem('currentStreak') || '1');
-        } else if (daysDiff === 1) {
-            const currentStreak = parseInt(localStorage.getItem('currentStreak') || '0');
-            const newStreak = currentStreak + 1;
-            localStorage.setItem('currentStreak', newStreak.toString());
-            return newStreak;
-        } else {
-            localStorage.setItem('currentStreak', '0');
-            return 0;
-        }
-    },
-    
-    // Generic transaction helper
-    async performTransaction(storeName, mode, operation) {
+
+    // --- Local IndexedDB Helpers (for migration) ---
+    async openLocalDB() {
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([storeName], mode);
-            const store = transaction.objectStore(storeName);
-            
-            const request = operation(store);
-            
-            if (request && request.onsuccess !== undefined) {
+            // Check if IndexedDB exists before opening
+            indexedDB.databases().then(databases => {
+                if (!databases.map(db => db.name).includes('SkillDropsDB')) {
+                    resolve(null);
+                    return;
+                }
+
+                const request = indexedDB.open('SkillDropsDB', 1);
+                request.onerror = () => reject("Error opening IndexedDB");
                 request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            } else {
-                // Handle operations that don't return a request
-                transaction.oncomplete = () => resolve(request);
-                transaction.onerror = () => reject(transaction.error);
-            }
+            });
         });
     },
-    
-    // Utility functions
-    async clearAllData() {
-        const stores = ['skills', 'favorites', 'ratings', 'stats'];
-        
-        for (const storeName of stores) {
-            await this.performTransaction(storeName, 'readwrite', (store) => {
-                return store.clear();
-            });
-        }
-        
-        localStorage.clear();
-    },
-    
-    async exportData() {
-        const data = {
-            skills: await this.getAllSkills(),
-            favorites: await this.getFavorites(),
-            ratings: await this.performTransaction('ratings', 'readonly', (store) => store.getAll()),
-            stats: await this.getStats(),
-            localStorage: {
-                theme: localStorage.getItem('theme'),
-                currentStreak: localStorage.getItem('currentStreak'),
-                lastSkillDate: localStorage.getItem('lastSkillDate'),
-                lastNotification: localStorage.getItem('lastNotification')
+
+    async getLocalStoreData(localDB, storeName) {
+        return new Promise((resolve, reject) => {
+            if (!localDB.objectStoreNames.contains(storeName)) {
+                resolve([]);
+                return;
             }
-        };
-        
-        return JSON.stringify(data, null, 2);
-    },
-    
-    async importData(jsonData) {
-        const data = JSON.parse(jsonData);
-        
-        // Clear existing data
-        await this.clearAllData();
-        
-        // Import skills
-        if (data.skills) {
-            for (const skill of data.skills) {
-                await this.addSkill(skill);
-            }
-        }
-        
-        // Import favorites
-        if (data.favorites) {
-            for (const favorite of data.favorites) {
-                await this.addFavorite(favorite.skillId);
-            }
-        }
-        
-        // Import ratings
-        if (data.ratings) {
-            for (const rating of data.ratings) {
-                await this.addRating(rating.skillId, rating.rating);
-            }
-        }
-        
-        // Import localStorage data
-        if (data.localStorage) {
-            Object.entries(data.localStorage).forEach(([key, value]) => {
-                if (value !== null) {
-                    localStorage.setItem(key, value);
-                }
-            });
-        }
+            const transaction = localDB.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+            request.onerror = () => reject(`Error reading from ${storeName}`);
+            request.onsuccess = () => resolve(request.result);
+        });
     }
 };
+
+// ✅ Initialize only after DOM and Firebase are ready
+document.addEventListener('DOMContentLoaded', () => {
+    DBManager.init();
+});
